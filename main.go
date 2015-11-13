@@ -4,6 +4,7 @@ import (
     "fmt"
     "log"
     "os"
+    "unicode/utf8"
 )
 
 //
@@ -25,6 +26,12 @@ func main() {
 
 // Validate command line arguments. Return error on failure.
 func validateArgs() (err error) {
+    for _, arg := range os.Args {
+        if ! utf8.ValidString(arg) {
+            err = fmt.Errorf("%s is not a valid utf8 string", arg)
+            return
+        }
+    }
     // TODO Use "flag" package instead of positional arguments.
 
     // TODO Use switch statement here instead of IF...ELSE.

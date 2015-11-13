@@ -11,6 +11,32 @@ import (
 // TODO Move duplicate code into its own setup function.
 // TODO Re-compile the go script under test before all tests run.
 
+func TestInvalidCharacterEncoding(t *testing.T) {
+    envVars := getEnvVarsAsMap()
+
+    scriptUnderTest := fmt.Sprintf("%s/bin/golang-weather-app",
+        envVars["GOPATH"])
+
+    invalidString := "\xbd\xb2\x3d\xbc\x20\xe2\x8c\x98"
+
+    cmd := exec.Command(scriptUnderTest, "foo", invalidString)
+    stdout, stderr := cmd.CombinedOutput()
+
+    errMsg := getErrorTextFromOutput(stdout)
+
+    expectedError := fmt.Sprintf("%s is not a valid utf8 string\n",
+        invalidString)
+
+    if string(errMsg) != expectedError {
+        t.Error(fmt.Sprintf("Message '%s' doesn't match expected error\n",
+            errMsg))
+    }
+
+    if stderr == nil {
+        t.Error("Script should fail with exit code 1")
+    }
+}
+
 func TestInvalidNumberOfArgs(t *testing.T) {
     envVars := getEnvVarsAsMap()
 
