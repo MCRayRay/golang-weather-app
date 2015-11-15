@@ -1,27 +1,63 @@
 package main
 
 import (
+    "encoding/json"
     "fmt"
+    "io/ioutil"
     "log"
     "os"
+    "net/http"
+    "net/url"
+    "strings"
     "unicode/utf8"
 )
 
 //
 func main() {
-    err := validateArgs()
+    var err error
+
+    err = validateArgs()
 
     if err != nil  {
         log.Fatal(err)
     }
 
-    // TODO Make request to Weather API.
+    apiURL := "http://api.openweathermap.org/data/2.5/weather"
 
-    // TODO Handle response from API (i.e., parse content, error handling, etc.)
-    // TODO Can we mock a response for the e2e test?
-    // Maybe via a package which acts as an interface to net/http.
+    queryParams := url.Values{}
+    queryParams.Set("q", strings.Join(os.Args[1:3],",") )
+    queryParams.Set("appid", "2de143494c0b295cca9337e1e96b00e0")
+    queryParams.Set("units", "metric")
 
-    // TODO Return response to user.
+    queryParamsStr := queryParams.Encode()
+
+    getURL := strings.Join([]string{ apiURL, "?", queryParamsStr }, "")
+    response, err := http.Get(getURL)
+
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    jsonBlob, err := ioutil.ReadAll(response.Body)
+
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    var decodedContent interface{}
+    err = json.Unmarshal(jsonBlob, &decodedContent)
+
+    if err != nil {
+        log.Fatal(err)
+    }
+
+    mainContent := decodedContent.(map[string]interface{})["main"]
+    temp := mainContent.(map[string]interface{})["temp"]
+
+    countryCodes := countryCodes()
+
+    fmt.Printf("The current temperature in '%s, %s' is estimated to be: %.2f degree Celsius\n",
+        os.Args[1], countryCodes[os.Args[2]], temp)
 }
 
 // Validate command line arguments. Return error on failure.
@@ -32,10 +68,8 @@ func validateArgs() (err error) {
             return
         }
     }
-    // TODO Use "flag" package instead of positional arguments.
 
-    // TODO Use switch statement here instead of IF...ELSE.
-    if len(os.Args)== 1 {
+    if len(os.Args) == 1 {
         scriptName := os.Args[0]
         err = fmt.Errorf(
             "Usage: %s [town/city] [iso_3166-1_alpha_2_country_code]\n",
@@ -60,7 +94,6 @@ func validateArgs() (err error) {
 }
 
 // Mapping of ISO-3166-1 Alpha-2 codes to countries.
-// TODO Can we move this to a constant?
 func countryCodes() map[string]string {
     return map[string]string{
         "AX":"Åland Islands",
