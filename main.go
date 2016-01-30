@@ -3,36 +3,24 @@ package main
 import (
     "encoding/json"
     "fmt"
+    "net/http"
     "io/ioutil"
     "log"
     "os"
-    "net/http"
-    "net/url"
-    "strings"
     "unicode/utf8"
+    "github.com/mcrayray/golang-weather-app/weather"
 )
 
-//
 func main() {
-    var err error
-
-    err = validateArgs()
+    err := validateArgs()
 
     if err != nil  {
         log.Fatal(err)
     }
 
-    apiURL := "http://api.openweathermap.org/data/2.5/weather"
+    weatherAPI := weather.New(http.DefaultClient)
 
-    queryParams := url.Values{}
-    queryParams.Set("q", strings.Join(os.Args[1:3],",") )
-    queryParams.Set("appid", "2de143494c0b295cca9337e1e96b00e0")
-    queryParams.Set("units", "metric")
-
-    queryParamsStr := queryParams.Encode()
-
-    getURL := strings.Join([]string{ apiURL, "?", queryParamsStr }, "")
-    response, err := http.Get(getURL)
+    response, err := weatherAPI.Get(os.Args[1], os.Args[2])
 
     if err != nil {
         log.Fatal(err)
